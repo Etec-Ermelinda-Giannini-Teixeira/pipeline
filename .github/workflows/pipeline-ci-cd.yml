@@ -1,27 +1,51 @@
-# Nome do workflow
+# =========================================================
+# PIPELINE CI/CD
+# =========================================================
+
+# Nome que aparecerá na aba Actions
 name: CI + CD - Pipeline Completo
 
-# Define quando o workflow será executado
+
+# =========================================================
+# QUANDO O WORKFLOW SERÁ EXECUTADO
+# =========================================================
+
 on:
 
   # Executa quando houver push na branch main
   push:
     branches: ["main"]
 
-  # Permite executar manualmente pela aba Actions
+  # Permite execução manual
   workflow_dispatch:
 
 
-# Permissões necessárias para o deploy
+# =========================================================
+# PERMISSÕES
+# =========================================================
+
 permissions:
+
+  # Permite ler o conteúdo do repositório
   contents: read
+
+  # Permite publicar no GitHub Pages
   pages: write
+
+  # Permite autenticação para o deploy
   id-token: write
 
 
-# Controla execuções simultâneas
+# =========================================================
+# CONTROLE DE EXECUÇÕES
+# =========================================================
+
 concurrency:
+
+  # Grupo utilizado para controlar os deploys
   group: "pages"
+
+  # Não cancela um deploy que já esteja em andamento
   cancel-in-progress: false
 
 
@@ -31,27 +55,45 @@ concurrency:
 
 jobs:
 
+
   # =======================================================
   # JOB 1 - CI
   # =======================================================
 
   ci:
 
-    # Máquina virtual utilizada pelo GitHub
+    # Sistema operacional utilizado pelo job
     runs-on: ubuntu-latest
 
     steps:
 
+      # ---------------------------------------------------
       # Baixa o código do repositório
+      # ---------------------------------------------------
+
       - name: Clonar repositório
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
 
 
-      # Aqui entra a validação do HTML
-      - name: Validar HTML
+      # ---------------------------------------------------
+      # Valida a existência do index.html
+      # ---------------------------------------------------
+
+      - name: Verificar se existe index.html
         run: |
-          echo "Executando validação do HTML..."
-          echo "CI concluído com sucesso!"
+
+          # Verifica se o arquivo index.html existe
+          if [ ! -f index.html ]; then
+
+            # Exibe mensagem de erro
+            echo "Arquivo index.html não encontrado!"
+
+            # Encerra o job com erro
+            exit 1
+          fi
+
+          # Se chegou aqui, o arquivo existe
+          echo "Arquivo index.html encontrado com sucesso!"
 
 
   # =======================================================
@@ -60,34 +102,55 @@ jobs:
 
   cd:
 
-    # IMPORTANTE:
-    # O CD só será executado depois que o CI terminar
-    # com sucesso.
+    # -----------------------------------------------------
+    # DEPENDÊNCIA
+    # -----------------------------------------------------
+
+    # O CD só começa se o CI terminar com sucesso
     needs: ci
 
-    # Máquina virtual utilizada pelo GitHub
+    # Sistema operacional utilizado pelo job
     runs-on: ubuntu-latest
 
     steps:
 
+
+      # ---------------------------------------------------
       # Baixa novamente o código
+      # ---------------------------------------------------
+
       - name: Clonar repositório
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
 
 
+      # ---------------------------------------------------
       # Configura o GitHub Pages
+      # ---------------------------------------------------
+
       - name: Configurar GitHub Pages
         uses: actions/configure-pages@v5
 
 
-      # Cria o artefato que será publicado
+      # ---------------------------------------------------
+      # Cria o artefato para publicação
+      # ---------------------------------------------------
+
       - name: Fazer upload dos arquivos
         uses: actions/upload-pages-artifact@v4
         with:
+
+          # Publica os arquivos que estão na raiz do projeto
           path: "."
 
 
+      # ---------------------------------------------------
       # Publica o site
+      # ---------------------------------------------------
+
       - name: Publicar no GitHub Pages
+
+        # Identificador utilizado para esta etapa
         id: deployment
+
+        # Action responsável pelo deploy
         uses: actions/deploy-pages@v4
