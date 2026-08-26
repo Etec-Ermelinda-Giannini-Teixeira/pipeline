@@ -1,0 +1,93 @@
+# Nome do workflow
+name: CI + CD - Pipeline Completo
+
+# Define quando o workflow será executado
+on:
+
+  # Executa quando houver push na branch main
+  push:
+    branches: ["main"]
+
+  # Permite executar manualmente pela aba Actions
+  workflow_dispatch:
+
+
+# Permissões necessárias para o deploy
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+
+# Controla execuções simultâneas
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+
+# =========================================================
+# JOBS
+# =========================================================
+
+jobs:
+
+  # =======================================================
+  # JOB 1 - CI
+  # =======================================================
+
+  ci:
+
+    # Máquina virtual utilizada pelo GitHub
+    runs-on: ubuntu-latest
+
+    steps:
+
+      # Baixa o código do repositório
+      - name: Clonar repositório
+        uses: actions/checkout@v6
+
+
+      # Aqui entra a validação do HTML
+      - name: Validar HTML
+        run: |
+          echo "Executando validação do HTML..."
+          echo "CI concluído com sucesso!"
+
+
+  # =======================================================
+  # JOB 2 - CD
+  # =======================================================
+
+  cd:
+
+    # IMPORTANTE:
+    # O CD só será executado depois que o CI terminar
+    # com sucesso.
+    needs: ci
+
+    # Máquina virtual utilizada pelo GitHub
+    runs-on: ubuntu-latest
+
+    steps:
+
+      # Baixa novamente o código
+      - name: Clonar repositório
+        uses: actions/checkout@v6
+
+
+      # Configura o GitHub Pages
+      - name: Configurar GitHub Pages
+        uses: actions/configure-pages@v5
+
+
+      # Cria o artefato que será publicado
+      - name: Fazer upload dos arquivos
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: "."
+
+
+      # Publica o site
+      - name: Publicar no GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
